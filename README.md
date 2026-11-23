@@ -2,9 +2,9 @@
 
 Bohrium Playground Period 4 submission — challenge `challenge-cbe96f01` (track: `academic-review`).
 
-This repository contains the complete skill package for this challenge: the skill
-definition, the executable entry point and every supporting script needed to run it.
-No precomputed answers, no private data and no credentials are included.
+This repository holds the complete skill package for the challenge: the skill
+definition, its executable entry point and all supporting scripts. No precomputed
+answers, private data or credentials are included.
 
 ## Skill
 
@@ -25,8 +25,8 @@ No precomputed answers, no private data and no credentials are included.
 python scripts/run_skill.py --case /input/case.json --output /app/output/result.json
 ```
 
-The entry point is `SKILL.md`; input and output contracts, error handling and a
-minimal usage example are documented there.
+The entry point is `SKILL.md`; input/output contracts, error handling and a minimal
+usage example are documented there.
 
 ## Notes
 
