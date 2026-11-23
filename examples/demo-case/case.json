@@ -1,0 +1,18 @@
+{
+  "case_id": "demo-cv-001",
+  "title": "引用与事实核验最小演示案例（合成材料，非正式案例结果）",
+  "manuscript_file": "manuscript.md",
+  "sources_file": "sources.json",
+  "task": "逐句核验带引用论断：引用是否支持结论、来源是否可靠、证据能否定位到原文；无法核验的标记待复核。",
+  "output_contract": {
+    "issues": "逐条问题：位置、原文、判定、严重度与修改建议",
+    "results": "带引用论断清单及逐条判定",
+    "refs": "引用标记 → 参考文献/来源的解析记录",
+    "severity": "按严重度与判定统计的计数",
+    "suggestions": "finding_id → 修改建议",
+    "unverifiable": "待复核条目及处置方式",
+    "conflicts": "数值、否定或撤稿等冲突",
+    "evidence": "证据定位索引（文件 + 章节 + 原文短引）",
+    "summary": "一段话运行摘要（字符串）"
+  }
+}
