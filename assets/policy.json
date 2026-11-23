@@ -1,0 +1,111 @@
+{
+  "version": "2.0.0",
+  "description": "引用与事实核验 Skill 的阈值、严重度映射、词表与容量上限。scripts/sk_entry.py 启动时读取；缺失或损坏时回退到脚本内置的同名默认值。",
+  "thresholds": {
+    "supported_min": 0.55,
+    "partial_min": 0.28,
+    "min_claim_terms": 3,
+    "quote_min_chars": 8,
+    "excerpt_chars": 240,
+    "max_claims": 300,
+    "max_findings": 600
+  },
+  "thresholds_rationale": {
+    "supported_min": "论断与来源标题/摘要/正文的共享词项占比 ≥ 0.55 视为词项层面支持；仍需人工抽读。",
+    "partial_min": "0.28–0.55 视为部分支持：主题相关但表述可能超出来源范围。",
+    "min_claim_terms": "有效词项少于 3 个时，覆盖比例不稳定，判为 unverifiable 而非硬判。",
+    "numeric_rule": "来源报告同单位不同数值 → 记 numeric_mismatch 并判 unsupported；来源未报告该数值且无同单位数值 → 记 numeric_absent 并将 supported 降为 partially_supported。"
+  },
+  "severity_levels": ["high", "medium", "low", "info"],
+  "severity_definitions": {
+    "high": "事实错误或高风险：数值与来源冲突、结论与来源相反、来源已撤稿、结论超出引文范围。必须修改后才能进入发表流程。",
+    "medium": "证据不足或需人工确认：部分支持、来源未报告关键数值、引用无法定位、缺失关键标识符。须复核并给出处置记录。",
+    "low": "规范/元数据问题：缺少 venue、年份或 DOI 形状异常；不改变结论但影响可回查性。",
+    "info": "通过项或正向记录：当前无问题；保留为可复核的检查记录。"
+  },
+  "verdict_severity": {
+    "supported": "info",
+    "partially_supported": "medium",
+    "unsupported": "high",
+    "unverifiable": "medium"
+  },
+  "verdict_definitions": {
+    "supported": "所引来源明确报告了该论断的核心内容；无数值/否定/引号冲突。",
+    "partially_supported": "来源主题相关，但部分要素（数值、范围、强度）未被报告或未被完整覆盖；表述需收窄。",
+    "unsupported": "来源不支持该论断：词项覆盖过低、数值冲突、否定方向相反，或结论明显超出引文范围。",
+    "unverifiable": "找不到可解析来源、来源无正文/摘要、PDF 不可抽取或标识符缺失；如实标记待复核，绝不补造。"
+  },
+  "numeric_units": {
+    "%": "percent", "percent": "percent", "percentage": "percent",
+    "participant": "participants", "participants": "participants",
+    "patient": "patients", "patients": "patients",
+    "subject": "participants", "subjects": "participants",
+    "case": "cases", "cases": "cases", "site": "sites", "sites": "sites",
+    "trial": "trials", "trials": "trials",
+    "year": "years", "years": "years", "month": "months", "months": "months",
+    "week": "weeks", "weeks": "weeks", "day": "days", "days": "days",
+    "hour": "hours", "hours": "hours", "mg": "mg", "kg": "kg", "ml": "ml",
+    "cm": "cm", "mm": "mm"
+  },
+  "negation_cues": [
+    "not", "no", "never", "none", "cannot", "can't", "without", "fail", "failed",
+    "absence", "lack", "lacked", "unable", "不", "无", "未", "没有", "并非", "不能"
+  ],
+  "overreach_cues": [
+    "all", "every", "always", "none", "never", "proves", "proven", "confirms",
+    "guarantees", "guarantee", "universally", "safe for", "definitively",
+    "全部", "所有", "总是", "从不", "证明", "确保", "完全"
+  ],
+  "method_cues": [
+    "randomized", "randomised", "randomization", "assay", "measured", "we used",
+    "we performed", "protocol", "participants were", "samples were",
+    "统计方法", "随机", "样本量", "实验设计", "盲法"
+  ],
+  "method_terms": [
+    "randomized", "randomised", "random", "trial", "assay", "measured", "protocol",
+    "participants", "samples", "method", "methods", "blind", "placebo",
+    "随机", "方法", "样本", "盲法", "对照"
+  ],
+  "peer_reviewed_markers": [
+    "journal", "transactions", "proceedings", "annals", "archives", "review",
+    "nature", "science", "lancet", "cell", "bmj", "jama", "plos", "springer",
+    "elsevier", "wiley", "press", "学报", "期刊", "杂志"
+  ],
+  "preprint_markers": [
+    "arxiv", "biorxiv", "medrxiv", "ssrn", "preprint", "research square",
+    "techrxiv", "osf", "预印本"
+  ],
+  "retraction_markers": ["retracted", "retraction", "withdrawn", "撤稿", "撤回"],
+  "stopwords": [
+    "the", "and", "for", "with", "from", "that", "this", "these", "those", "were",
+    "was", "are", "is", "has", "have", "had", "not", "but", "also", "can", "could",
+    "may", "might", "will", "would", "should", "our", "we", "their", "its", "they",
+    "which", "than", "more", "less", "into", "over", "under", "about", "between",
+    "among", "study", "studies", "paper", "article", "result", "results", "data",
+    "analysis", "group", "groups", "using", "used", "use", "based", "however",
+    "therefore", "thus", "here", "there", "been", "being", "such", "other", "same",
+    "本文", "我们", "研究", "方法", "结果", "数据", "分析", "显示", "表明", "以及",
+    "相关", "进行", "通过", "可以", "需要", "提供", "本文", "该", "其", "这", "那"
+  ],
+  "caps": {
+    "max_streams": 300,
+    "max_sources": 500,
+    "max_pdf_chars": 200000
+  },
+  "principles": [
+    "never_fabricate_sources",
+    "never_fabricate_numbers",
+    "every_finding_has_locator_and_quote",
+    "quote_must_be_verbatim_from_input",
+    "unverifiable_is_a_valid_verdict",
+    "no_network_no_external_lookup",
+    "state_limits_in_uncertainty"
+  ],
+  "forbidden_in_outputs": [
+    "编造的 DOI、页码或引文",
+    "未在输入中出现的来源内容",
+    "把待复核条目写成已确认结论",
+    "凭题面标签补造数据",
+    "自评分或平台评分声明"
+  ]
+}
