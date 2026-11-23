@@ -1,0 +1,42 @@
+{
+  "sources": [
+    {
+      "id": 1,
+      "title": "Exercise and falls in older adults",
+      "authors": "Lee J, Park S",
+      "year": "2020",
+      "venue": "Journal of Aging and Health",
+      "doi": "10.1000/jah.2020.001",
+      "abstract": "Exercise reduced falls by 30% in a randomized controlled trial of 240 older adults."
+    },
+    {
+      "id": 2,
+      "title": "Balance training in older adults: a pilot study",
+      "authors": "Kim SY",
+      "year": "2021",
+      "venue": "Pilot Studies in Rehabilitation",
+      "doi": "10.1000/psr.2021.014",
+      "abstract": "Balance training improved balance scores in older adults, although the study was small."
+    },
+    {
+      "id": 3,
+      "title": "Exercise and mortality in frail adults",
+      "authors": "Rossi M",
+      "year": "2018",
+      "venue": "Journal of Frail Care",
+      "doi": "10.1000/jfc.2018.007",
+      "abstract": "In frail adults, exercise reduced mortality by 10% in a single-center trial.",
+      "retracted": true,
+      "retraction_note": "Retracted in 2023 for data irregularities."
+    },
+    {
+      "id": 4,
+      "title": "Trial design and recruitment",
+      "authors": "Chen L",
+      "year": "2019",
+      "venue": "Trials",
+      "doi": "10.1000/trials.2019.221",
+      "abstract": "The trial enrolled 120 participants across two sites."
+    }
+  ]
+}
