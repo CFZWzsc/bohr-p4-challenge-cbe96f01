@@ -3,33 +3,44 @@
 Bohrium Playground Period 4 submission — challenge `challenge-cbe96f01` (track: `academic-review`).
 
 This repository holds the complete skill package for the challenge: the skill
-definition, its executable entry point and all supporting scripts. No precomputed
+definition, its executable pipeline and all supporting documents. No precomputed
 answers, private data or credentials are included.
 
 ## Skill
 
 - Name: `citation-and-fact-verification`
-- Summary: Use when a manuscript's citations and factual statements must be verified, requiring claim extraction, numeric and author-year marker resolution, claim-to-source lexical support checks, reference metadata and duplicate audits, numeric consistency checks and explicit cannot-verify items without online lookup.
+- Summary: >-
 
 ## Contents
 
 | File |
 |------|
 | `SKILL.md` |
+| `assets/policy.json` |
+| `examples/demo-case/case.json` |
+| `examples/demo-case/manuscript.md` |
+| `examples/demo-case/sources.json` |
+| `examples/quickstart.md` |
+| `references/evidence-locators.md` |
+| `references/verdicts-and-severity.md` |
+| `references/verification-protocol.md` |
 | `scripts/run_skill.py` |
+| `scripts/sk_entry.py` |
 | `README.md` |
 
 ## How to run
 
 ```bash
-python scripts/run_skill.py --case /input/case.json --output /app/output/result.json
+python scripts/sk_entry.py --input /input --work /app/work --out /app/output
 ```
 
-The entry point is `SKILL.md`; input/output contracts, error handling and a minimal
-usage example are documented there.
+Two passes are intended: the first writes `/app/work/agent_tasks.json` (evidence
+skeleton) and `/app/output/result.json`; after the agent writes
+`/app/work/agent_judgement.json`, the second pass merges and validates the result.
+See `SKILL.md` and `references/two-phase-workflow.md`.
 
 ## Notes
 
 - Pure Python standard library; no network access required.
-- The result JSON keeps the input case id, the main results, per-item evidence,
-  a run status and an uncertainty section.
+- Every claim is anchored to paragraph-level evidence; unknown items are reported
+  in `uncertainty` instead of being fabricated.
