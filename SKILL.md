@@ -153,19 +153,13 @@ python scripts/run_skill.py --input /input --work /app/work --out /app/output
 - [ ] 数值冲突、撤稿、缺失标识符分别有独立 finding；
 - [ ] 无法定位的引用全部出现在 `unverifiable`，且没有编造来源；
 - [ ] `uncertainty` 覆盖 PDF 低置信、来源缺正文、离线限制；
-- [ ] `run-review.md` 已写到 `/app/output/run-review.md`。
+- [ ] `run-review.md` 与 `review-report.md` 已写到 `/app/output/`；报告与 `findings` 一致。
 
 ## Agent 执行指令
 
-1. **运行**：执行
-   `python /skills/weekly-skill/scripts/sk_entry.py --input /input --work /app/work --out /app/output`
-   （本地用 `python scripts/sk_entry.py --input <dir> --work <dir> --out <dir>`）。
-2. **读取** `/app/output/result.json`，确认 `status` 不是意外降级；若为 `insufficient_input` / `partial`，先检查 `errors` 与 `uncertainty`，不要自行补造输入。
-3. **逐条复核**：对每个 finding，按 `locator` 打开稿件核对 `quote`，按 `source_locator` 打开来源核对 `source_quote`；定位对不上就标记该条为需重做，不能沿用。
-4. **核对计数**：`counts.by_verdict` 与 claims、`counts.by_severity` 与 findings 必须一致；不一致时以实际列表为准并说明。
-5. **核对待复核**：`unverifiable` 中的每条都应有明确 `reason` 与 `resolution`；确认没有把待复核写成已确认。
-6. **写入报告**：把上述复核结论整理进 `/app/output/run-review.md`（脚本已生成初稿，可在其后追加“人工复核记录”小节；不得删除原始定位证据）。
-7. **汇报**：只报告实际运行结果与定位核对情况，不声称已在线核验 DOI、撤稿库或全文。
+1. 运行 `python /skills/weekly-skill/scripts/sk_entry.py --input /input --work /app/work --out /app/output`（本地用 `python scripts/sk_entry.py --input <dir> --work <dir> --out <dir>`）。
+2. 读取 `result.json` 与 `review-report.md`；对每个 finding 按 `locator` / `source_locator` 回查稿件与来源原文，定位不符即标为需重做，不得沿用。
+3. 报告只写实际运行结果与回查情况，不声称已在线核验 DOI、撤稿库或全文。
 
 ## 输出结构
 
@@ -184,6 +178,7 @@ python scripts/run_skill.py --input /input --work /app/work --out /app/output
 | `conflicts` | 数值冲突、否定冲突、撤稿冲突 |
 | `evidence` | 定位索引（claim / source / source_record） |
 | `uncertainty` / `limitations` | 不确定性与方法边界 |
+| `coverage` / `review_report` | 六类问题覆盖表与可直接交付的 markdown 审查报告 |
 | `run_log` / `errors` / `stats` / `inputs` | 运行痕迹与输入清单 |
 | `output_contract_fields` / `contract_map` / `contract_extras` | 契约键覆盖、别名映射与缺口说明 |
 
