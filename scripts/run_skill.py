@@ -83,6 +83,51 @@ def _write_fallback(out_path, message):
             pass
 
 
+def _load_case(argv):
+    """Best-effort load of the real case.json for evidence re-location."""
+    candidates = []
+    for index, item in enumerate(argv):
+        if item in ("--input", "--case") and index + 1 < len(argv):
+            candidates.append(argv[index + 1])
+        elif item.startswith("--input=") or item.startswith("--case="):
+            candidates.append(item.split("=", 1)[1])
+    candidates += ["/input", "examples/demo-case"]
+    for path in candidates:
+        try:
+            if os.path.isdir(path):
+                path = os.path.join(path, "case.json")
+            if os.path.isfile(path):
+                with open(path, "r", encoding="utf-8") as handle:
+                    return json.load(handle)
+        except Exception:
+            continue
+    return {}
+
+
+def _input_dir(argv):
+    for index, item in enumerate(argv):
+        if item in ("--input",) and index + 1 < len(argv):
+            return argv[index + 1]
+        if item.startswith("--input="):
+            return item.split("=", 1)[1]
+    return "/input"
+
+
+def _enrich_output(out_path, argv):
+    """Additive quote re-location + auxiliary artifacts; never blocks the run."""
+    try:
+        if not Path(out_path).is_file():
+            return
+        import review_core
+        with open(out_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        payload = review_core.enrich(payload, _load_case(argv), out_path, _input_dir(argv))
+        with open(out_path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     script_dir = Path(__file__).resolve().parent
@@ -92,6 +137,7 @@ def main(argv=None):
     try:
         import sk_entry
         code = sk_entry.main(argv)
+        _enrich_output(out_path, argv)
         if code != 0 and not Path(out_path).is_file():
             _write_fallback(out_path, "sk_entry returned code %s" % code)
         return 0
