@@ -2138,6 +2138,11 @@ def resolve_paths(args):
 def run(input_dir, work_dir, out_dir, result_path):
     errors = []
     case, case_path = discover_case(input_dir, errors)
+    try:
+        import review_ext
+        case = review_ext.augment_case(case, str(case_path) if case_path else str(input_dir / "case.json"))
+    except Exception:
+        pass
     if not isinstance(case, dict):
         case = {}
     case_id = case_identifier(case)
@@ -2167,6 +2172,12 @@ def run(input_dir, work_dir, out_dir, result_path):
         payload["uncertainty"].append({"type": "runtime_error", "detail": str(exc)[:300]})
 
     payload = apply_contract(payload, case)
+    try:
+        import review_ext
+        payload = review_ext.enrich(payload, case if isinstance(case, dict) else {},
+                                    str(case_path) if case_path else None, str(work_dir))
+    except Exception:
+        pass
     if "in_progress" in json.dumps(payload.get("uncertainty", []), ensure_ascii=False):
         payload["uncertainty"] = [item for item in payload.get("uncertainty", [])
                                   if item.get("type") != "in_progress"]
@@ -2187,6 +2198,12 @@ def run(input_dir, work_dir, out_dir, result_path):
     try:
         write_text(out_dir / "run-review.md", build_review(payload, problems))
     except OSError:
+        pass
+    try:
+        import review_ext
+        review_ext.write_artifacts(payload, result_path, case if isinstance(case, dict) else {},
+                                   str(case_path) if case_path else None, str(work_dir))
+    except Exception:
         pass
     try:
         report = payload.get("review_report")
