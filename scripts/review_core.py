@@ -176,6 +176,13 @@ def enrich(payload, case, out_path, input_dir=None):
         if not isinstance(quote, str) or len(quote.strip()) < 8:
             continue
         total += 1
+        if isinstance(row.get("quote_verified"), bool):
+            # review_ext already verified this quote against the full material
+            if row["quote_verified"]:
+                verified += 1
+            else:
+                unverified.append({"quote": quote[:160], "locator": row.get("locator", "")})
+            continue
         pid = locate(quote, paragraphs)
         if pid:
             verified += 1
