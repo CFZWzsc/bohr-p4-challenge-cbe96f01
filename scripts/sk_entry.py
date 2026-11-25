@@ -175,6 +175,10 @@ NUMBER_RE = re.compile(
 QUOTE_RE = re.compile(r"[\u201c\"]([^\u201d\"]{8,200})[\u201d\"]")
 
 VERDICTS = ("supported", "partially_supported", "unsupported", "unverifiable")
+# 非引用锚定的审查项（规范/论证链/统计报告）不以“论断-引文”为对象，
+# verdict 表达的是该检查项自身的判定，故使用独立取值集合与字段要求。
+REVIEW_FACETS = ("academic_norm", "argument_chain", "statistical_reporting")
+REVIEW_VERDICTS = ("not_reported", "unverifiable", "insufficient_evidence")
 
 
 # ---------------------------------------------------------------------------
@@ -1397,6 +1401,93 @@ def build_payload(case, case_path, input_dir, task_text, policy, errors):
                         "detail": source.get("retraction_note") or "来源元数据标记为已撤稿",
                     })
 
+    # 学术规范声明核查（六类问题中“学术规范”一类）
+    for item_name, pattern, severity, advice in NORMS_ITEMS:
+        if re.search(pattern, manuscript_text, re.IGNORECASE):
+            continue
+        findings.append({
+            "finding_id": "F%02d" % (len(findings) + 1),
+            "claim_id": None,
+            "citation_id": None,
+            "citation_ids": [],
+            "verdict": "not_reported",
+            "severity": severity,
+            "facet": "academic_norm",
+            "locator": {"file": manuscript_name, "section": "full_text",
+                        "format": "%s → 全文检索未检出 %s" % (manuscript_name, item_name)},
+            "quote": "",
+            "source_locator": None,
+            "source_quote": "",
+            "rationale": "全文未检出 %s 声明；缺失声明仅表示未报告，不等同于违规（%s）。" % (item_name, item_name),
+            "suggested_revision": advice,
+            "needs_recheck": True,
+            "metrics": {"norms_item": item_name},
+        })
+
+    # 论证链核查（六类问题中“论证链”一类）：推断标记既无引用也无数据锚定
+    chain_hits = 0
+    for sentence in split_sentences(manuscript_text):
+        if chain_hits >= 3:
+            break
+        body = sentence["text"]
+        if not re.search(r"\btherefore\b|\bthus\b|\bhence\b|consequently|因此|所以|由此可见", body, re.IGNORECASE):
+            continue
+        if re.search(r"\[\d+\]|\(\s*[A-Z][^)]{0,40}\d{4}\s*\)|\d", body):
+            continue
+        section = section_for(sections, sentence["start"])
+        findings.append({
+            "finding_id": "F%02d" % (len(findings) + 1),
+            "claim_id": None,
+            "citation_id": None,
+            "citation_ids": [],
+            "verdict": "unverifiable",
+            "severity": "low",
+            "facet": "argument_chain",
+            "locator": claim_locator(manuscript_name, section,
+                                     manuscript_text.count("\n", 0, sentence["start"]) + 1, 1,
+                                     sentence["start"], sentence["end"]),
+            "quote": body[:400],
+            "source_locator": None,
+            "source_quote": "",
+            "rationale": "推断句（therefore/thus/因此等）既无引用标记也无数据锚定，结论与证据之间的链条需补强。",
+            "suggested_revision": "为该推断补上引用或数据来源，或弱化推断措辞（如表明为作者推断）。",
+            "needs_recheck": True,
+            "metrics": {"chain_marker": True},
+        })
+        chain_hits += 1
+
+    # 统计报告核查（六类问题中“统计报告”一类）：报告统计量但无引用/数据锚定
+    stats_hits = 0
+    for sentence in split_sentences(manuscript_text):
+        if stats_hits >= 3:
+            break
+        body = sentence["text"]
+        if not re.search(r"p\s*[<=>]\s*0?\.\d+|\bCI\b|confidence interval|\b\d+(?:\.\d+)?\s*%", body, re.IGNORECASE):
+            continue
+        if re.search(r"\[\d+\]|\(\s*[A-Z][^)]{0,40}\d{4}\s*\)", body):
+            continue
+        section = section_for(sections, sentence["start"])
+        findings.append({
+            "finding_id": "F%02d" % (len(findings) + 1),
+            "claim_id": None,
+            "citation_id": None,
+            "citation_ids": [],
+            "verdict": "unverifiable",
+            "severity": "low",
+            "facet": "statistical_reporting",
+            "locator": claim_locator(manuscript_name, section,
+                                     manuscript_text.count("\n", 0, sentence["start"]) + 1, 1,
+                                     sentence["start"], sentence["end"]),
+            "quote": body[:400],
+            "source_locator": None,
+            "source_quote": "",
+            "rationale": "报告了统计量但该句无引用标记或数据落点，样本量/检验方法/来源无法就地回查。",
+            "suggested_revision": "在该句补注样本量、检验方法与引用/数据来源，或把统计细节移入结果表并注明表号。",
+            "needs_recheck": True,
+            "metrics": {"statistical_marker": True},
+        })
+        stats_hits += 1
+
     counts = count_findings(findings)
     verdict_counts = {verdict: 0 for verdict in VERDICTS}
     for claim in claim_rows:
@@ -1408,6 +1499,8 @@ def build_payload(case, case_path, input_dir, task_text, policy, errors):
     uncertainty = build_uncertainty(manuscript_text, sources, claims_raw, errors, policy)
     summary_text = build_summary_text(claim_rows, findings, verdict_counts, severity_counts, len(unverifiable))
     evidence = build_evidence(claim_rows, findings, sources)
+
+    coverage = build_coverage(findings)
 
     status = "success"
     status_reason = "已完成论断抽取、引用映射、支持度检查、来源可靠性检查与证据定位。"
@@ -1452,6 +1545,10 @@ def build_payload(case, case_path, input_dir, task_text, policy, errors):
             "conflicts": len(conflicts),
         },
         "summary": summary_text,
+        "coverage": coverage,
+        "review_report": {"format": "markdown",
+                          "content": render_review_report(case_identifier(case), status, claim_rows, findings,
+                                                          coverage, summary_text, uncertainty)},
         "suggestions": {finding["finding_id"]: finding["suggested_revision"] for finding in findings},
         "evidence": evidence,
         "uncertainty": uncertainty,
@@ -1482,6 +1579,78 @@ def build_payload(case, case_path, input_dir, task_text, policy, errors):
         },
     }
     return payload
+
+
+NORMS_ITEMS = [
+    ("data_availability", r"(data|dataset)s? (are|is) available|data availability|数据可(用|获取)", "medium",
+     "补充数据可用性声明（仓库地址或获取条件）。"),
+    ("code_availability", r"code (is|are) available|code availability|代码可(用|获取)|分析脚本", "low",
+     "补充代码可用性声明，或说明代码可向作者索取。"),
+    ("conflict_of_interest", r"conflict of interest|competing interests?|利益冲突", "medium",
+     "补充利益冲突声明（含“无利益冲突”的明确表述）。"),
+    ("ethics_approval", r"ethics (committee|approval|board)|institutional review|\bIRB\b|伦理(委员会|批件|审批)", "medium",
+     "补充伦理批件编号与批准机构。"),
+    ("funding", r"fund(ing|ed) by|grant (no|number)|supported by .{0,40}(grant|foundation)|基金|资助", "low",
+     "补充资助来源与项目编号，或声明无资助。"),
+]
+
+COVERAGE_MAP = [
+    ("fact_check", "事实核验", ("numeric_consistency", "source_reliability")),
+    ("citation_support", "引用支持", ("citation_support", "citation_integrity")),
+    ("method_design", "方法设计", ("method_description",)),
+    ("statistical_reporting", "统计报告", ("statistical_reporting",)),
+    ("argument_chain", "论证链", ("argument_chain",)),
+    ("academic_norms", "学术规范", ("academic_norm",)),
+]
+
+
+def build_coverage(findings):
+    coverage = []
+    for key, label, facets in COVERAGE_MAP:
+        hits = [item for item in findings if item.get("facet") in facets]
+        coverage.append({
+            "category": key,
+            "label": label,
+            "status": "finding" if hits else "checked_no_signal",
+            "findings": len(hits),
+            "severity_max": max([item.get("severity") for item in hits], default=None),
+        })
+    return coverage
+
+
+def render_review_report(case_id, status, claim_rows, findings, coverage, summary_text, uncertainty):
+    lines = ["# 引用与事实核验审查报告", "",
+             "- case_id: `%s`" % (case_id or "unknown"),
+             "- 状态: %s" % status,
+             "- 论断: %d，问题: %d" % (len(claim_rows), len(findings)), "",
+             "## 一、结论摘要", "", summary_text or "（无摘要）", "",
+             "## 二、六类问题覆盖", "", "| 类别 | 状态 | 问题数 | 最高级别 |", "|---|---|---:|---|"]
+    for item in coverage:
+        lines.append("| %s | %s | %d | %s |" % (item["label"], item["status"], item["findings"],
+                                               item["severity_max"] or "—"))
+    lines += ["", "## 三、论断核验", "", "| 论断 | 判定 | 引用 |", "|---|---|---|"]
+    for claim in claim_rows:
+        lines.append("| %s | %s | %s |" % (claim.get("claim_id"), claim.get("verdict"),
+                                           ", ".join(claim.get("citation_ids") or []) or "—"))
+    lines += ["", "## 四、问题清单"]
+    if not findings:
+        lines += ["", "本次材料在已检查项上未发现问题。"]
+    for item in findings:
+        lines += ["", "### %s [%s] %s" % (item.get("finding_id"), item.get("severity"), item.get("facet")), "",
+                  "- 定位：`%s`" % ((item.get("locator") or {}).get("format") or "未定位")]
+        if item.get("quote"):
+            lines.append("- 原文：“%s”" % item["quote"])
+        if item.get("source_quote"):
+            lines.append("- 来源原文：“%s”" % item["source_quote"])
+        lines += ["- 判定：%s" % (item.get("rationale") or ""),
+                  "- 修改建议：%s" % (item.get("suggested_revision") or "")]
+    lines += ["", "## 五、限制与待复核", ""]
+    for item in uncertainty or []:
+        if isinstance(item, dict):
+            lines.append("- %s：%s" % (item.get("type", "uncertainty"), item.get("detail", "")))
+        else:
+            lines.append("- %s" % item)
+    return "\n".join(lines)
 
 
 def count_findings(findings):
@@ -1792,11 +1961,18 @@ def self_check(payload, case_id):
         if not claim.get("quote"):
             problems.append("%s 缺少原文短引" % claim.get("claim_id"))
     for finding in findings:
-        for key in ("claim_id", "verdict", "severity", "locator", "quote", "rationale", "suggested_revision"):
-            if not finding.get(key):
-                problems.append("%s 缺少字段 %s" % (finding.get("finding_id"), key))
-        if finding.get("verdict") not in VERDICTS:
-            problems.append("%s 的 verdict 非法" % finding.get("finding_id"))
+        if finding.get("facet") in REVIEW_FACETS:
+            for key in ("facet", "severity", "locator", "rationale", "suggested_revision"):
+                if not finding.get(key):
+                    problems.append("%s 缺少字段 %s" % (finding.get("finding_id"), key))
+            if finding.get("verdict") not in REVIEW_VERDICTS:
+                problems.append("%s 的 verdict 非法" % finding.get("finding_id"))
+        else:
+            for key in ("claim_id", "verdict", "severity", "locator", "quote", "rationale", "suggested_revision"):
+                if not finding.get(key):
+                    problems.append("%s 缺少字段 %s" % (finding.get("finding_id"), key))
+            if finding.get("verdict") not in VERDICTS:
+                problems.append("%s 的 verdict 非法" % finding.get("finding_id"))
         if finding.get("severity") not in ("high", "medium", "low", "info"):
             problems.append("%s 的 severity 非法" % finding.get("finding_id"))
     counts = payload.get("counts") or {}
@@ -2010,6 +2186,12 @@ def run(input_dir, work_dir, out_dir, result_path):
         return 0
     try:
         write_text(out_dir / "run-review.md", build_review(payload, problems))
+    except OSError:
+        pass
+    try:
+        report = payload.get("review_report")
+        if isinstance(report, dict) and report.get("content"):
+            write_text(out_dir / "review-report.md", report["content"])
     except OSError:
         pass
     try:
