@@ -24,6 +24,7 @@ answers, private data or credentials are included.
 | `examples/quickstart.md` |
 | `references/evidence-locators.md` |
 | `references/output-contract.md` |
+| `references/peer-review-checklist.md` |
 | `references/verdicts-and-severity.md` |
 | `references/verification-protocol.md` |
 | `scripts/review_core.py` |
