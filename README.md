@@ -15,6 +15,7 @@ answers, private data or credentials are included.
 
 | File |
 |------|
+| `RUBRIC.md` |
 | `SKILL.md` |
 | `assets/policy.json` |
 | `docs/ERROR_HANDLING.md` |
@@ -23,6 +24,7 @@ answers, private data or credentials are included.
 | `examples/demo-case/sources.json` |
 | `examples/quickstart.md` |
 | `references/evidence-locators.md` |
+| `references/gain-ablation.md` |
 | `references/output-contract.md` |
 | `references/peer-review-checklist.md` |
 | `references/verdicts-and-severity.md` |
