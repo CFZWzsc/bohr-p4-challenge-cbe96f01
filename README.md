@@ -17,13 +17,17 @@ answers, private data or credentials are included.
 |------|
 | `SKILL.md` |
 | `assets/policy.json` |
+| `docs/ERROR_HANDLING.md` |
 | `examples/demo-case/case.json` |
 | `examples/demo-case/manuscript.md` |
 | `examples/demo-case/sources.json` |
 | `examples/quickstart.md` |
 | `references/evidence-locators.md` |
+| `references/output-contract.md` |
 | `references/verdicts-and-severity.md` |
 | `references/verification-protocol.md` |
+| `scripts/review_core.py` |
+| `scripts/review_ext.py` |
 | `scripts/run_skill.py` |
 | `scripts/sk_entry.py` |
 | `README.md` |
